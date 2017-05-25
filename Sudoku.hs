@@ -450,7 +450,7 @@ search :: Matrix Choices -> [Matrix Value]
 search m
     | unsolvable m || not (satisfy m) = []
     | complete m = collapse m
-    | otherwise = [s | m' <- expand m, s <- search (fixpoint prune_level_1 m')]
+    | otherwise = [s | m' <- expand m, s <- search (fixpoint prune_level_2 m')]
                                          -- change the number 1,2,3 to control different levels
                                          -- 'fromSudoku' function should also be changed as the same time
                                          -- replace 'expandFirst' by 'expand to test the naive expand
@@ -484,7 +484,7 @@ solve str = to_listOfStr list_Of_matrix
 -- helper functions (typical Top-down):
 -- | converts Sudoku to choices matrix which is applied in pruning part
 fromSudoku :: Sudoku -> [Matrix Value]
-fromSudoku (Sudoku m) = search (prune_level_3 (choices m))
+fromSudoku (Sudoku m) = search (prune_level_2 (choices m))
                                 -- change the number 1,2,3 to control different levels
                                 --'search' function should also be changed as the same time
 -- | converts a matrix to string
