@@ -132,6 +132,7 @@ example =
 -- allBlanks is a Sudoku with just blanks
 allBlanks :: Sudoku
 allBlanks = Sudoku (replicate 9 (replicate 9 Nothing))
+
 -- | isSudoku checks if a Sudoku has the proper dimensions
 -- >>> isSudoku (Sudoku [])
 -- False
@@ -141,6 +142,7 @@ allBlanks = Sudoku (replicate 9 (replicate 9 Nothing))
 -- True
 -- >>> isSudoku (Sudoku (tail (cells example)))
 -- False
+
 -- | isSudoku sud checks if sud is really a valid representation of a sudoku
 isSudoku :: Sudoku -> Bool
 isSudoku (Sudoku s)      = validRows && validCols && validNums
@@ -149,9 +151,11 @@ isSudoku (Sudoku s)      = validRows && validCols && validNums
         validNums        = and $ concatMap (map isValid) s
         isValid Nothing  = True
         isValid (Just n) = n >= 1 && n <= 9
+
 -- | noBlanks checks if a Sudoku has no blanks
 noBlanks :: Sudoku -> Bool
 noBlanks (Sudoku s) = (Nothing `notElem`) $ concat s
+
 -- | printSudoku prints a Sudoku as a 9 x 9 grid
 -- Example:
 --    3 6 . . 7 1 2 . .
@@ -168,24 +172,27 @@ printSudoku = mapM_ putStrLn . map (concatMap printCell) . cells
     where
         printCell Nothing = "."
         printCell (Just n) = show n
+
 -- | cell generates an arbitrary cell in a Sudoku
 -- The frequency of Nothing versus Just n values is currently 90% versus 10%,
 -- but you may want to change that ratio.
 cell :: Gen (Maybe Int)
 cell = frequency
     [(10, oneof [return (Just n) | n <- [1 .. 9]]), (90, return Nothing)]
+
 -- | An instance for generating Arbitrary Sudokus
 -- prop> isSudoku s
 instance Arbitrary Sudoku where
   arbitrary = do
     rows <- sequence [sequence [cell | j <- [1 .. 9]] | i <- [1 .. 9]]
     return (Sudoku rows)
---(fromString toString) are based on https://github.com/Eriuo/Haskell/blob/master/Sudoku/Sudoku.hs
--- | fromString converts an 81-character canonical string encoding for a
--- | Sudoku into our internal representation
+
+-- fromString converts an 81-character canonical string encoding for a
+-- Sudoku into our internal representation
 fromString :: String -> Sudoku
 fromString xs = Sudoku (group xs)
--- | group a string into a nested list consisting of 9 lists
+
+-- group a string into a nested list consisting of 9 lists
 group :: String -> Matrix Cell
 group xs = chunk 9 (concat [convert s | s <- ys])
     where
@@ -195,8 +202,9 @@ chunk _ [] = []
 chunk n l
     | n > 0 = (take n l) : (chunk n (drop n l))
     | otherwise = error "Negative n"
+
 -- http://stackoverflow.com/questions/12876384/grouping-a-list-into-lists-of-n-elements-in-haskell
--- | converts a string into a row
+-- converts a string into a row
 convert :: String -> Row Cell
 convert str = case str of
             [] -> []
@@ -204,8 +212,9 @@ convert str = case str of
             (x:xs)
                 | isDigit x -> [Just (digitToInt x)] ++ convert xs
                 | otherwise -> error "Not a sudoku!"
--- | toString converts a Sudoku into its canonical 81-character string
--- | encoding
+
+-- toString converts a Sudoku into its canonical 81-character string
+-- encoding
 -- prop> fromString (toString s) == s
 toString :: Sudoku -> String
 toString (Sudoku s) = concat $ [printRow (selectRow s x) | x <- [0..8]] -- traversal of all rows (x is the index)
@@ -214,11 +223,13 @@ toString (Sudoku s) = concat $ [printRow (selectRow s x) | x <- [0..8]] -- trave
             []           -> ""
             (Nothing:xs) -> "." ++ printRow xs
             (Just a:xs)  -> [intToDigit a] ++ printRow xs
--- | the Int represents the row index in the matrix
+
+-- the Int represents the row index in the matrix
 selectRow :: Matrix Cell -> Int -> Row Cell
 selectRow (x:_) 0  = x
 selectRow (x:xs) n = selectRow xs (n-1)
 type Block a = [a]
+
 -- | rows cols boxs are blocks which have to satisfy 2 constraints : No blanks & No duplicates when finished
 rows :: Matrix a -> [Block a]
 rows = id
@@ -234,6 +245,7 @@ boxs = unpack . (map cols) . pack
 chop :: Int -> [a] -> [[a]]
 chop n [] = []
 chop n xs = take n xs : chop n (drop n xs)
+
 -- | Test if a block of cells does not contain the same integer twice
 -- >>> okBlock [Just 1, Just 7, Nothing, Nothing, Just 3, Nothing, Nothing, Nothing, Just 2]
 -- True
@@ -247,6 +259,7 @@ removeNothing b = case b of
     []           -> []
     (Nothing:xs) -> removeNothing xs
     (x:xs)       -> [x] ++ removeNothing xs
+
 -- | No block contains the same integer twice
 -- >>> okSudoku allBlanks
 -- True
@@ -259,8 +272,9 @@ okSudoku :: Sudoku -> Bool
 okSudoku (Sudoku s) = all okBlock (boxs s) &&
                       all okBlock (rows s) &&
                       all okBlock (cols s)
--- | okSudoku constrains the duplicates
--- | noBlanks constrains the sudoku is finished without "Nothing" position
+
+-- okSudoku constrains the duplicates
+-- noBlanks constrains the sudoku is finished without "Nothing" position
 -- |  QuickCheck property to check whether the sudoku is valid
 prop_Sudoku :: Sudoku -> Bool
 prop_Sudoku (Sudoku s) = isSudoku (Sudoku s)
@@ -343,49 +357,57 @@ cp (x:xs) = [y:ys | y <- x, ys <- cp xs]
 -- | Implement collapse
 collapse = cp . map cp
 -- | Constraint Propagation (Extension 1) : to prune the huge search space
---   I implement 3 levels :
---   level_1: prune singles
---   level_2: prune naked pairs
---   level_3: prune naked triples
--- Obviously, if there is only one element in the Choices list, the only value must be the solution for that position
--- This means, other positions in the blocks related to this known position cannot choose that value, so we have to
--- reduce this value from the choices list of all related positions (sharing row/col/box)
--- LEVEL 1 for Constraint Propagation is to "remove singles"
--- | Solver - LEVEL 1 : Prune the single choice (a value occurs only once for a block)
--- | minus will remove the second set from the first:
+--  I implement 3 levels :
+--  level_1: prune singles
+--  level_2: prune naked pairs
+--  level_3: prune naked triples
+--  Obviously, if there is only one element in the Choices list, the only value must be the solution for that position
+--  This means, other positions in the blocks related to this known position cannot choose that value, so we have to
+--  reduce this value from the choices list of all related positions (sharing row/col/box)
+--  LEVEL 1 for Constraint Propagation is to "remove singles"
+
+
+--  Solver - LEVEL 1 : Prune the single choice (a value occurs only once for a block)
+-- minus will remove the second set from the first:
 minus :: Choices -> Choices -> Choices
 xs `minus` ys = if is_single xs then xs else xs\\ys
--- | performs this removal on a Row of Choices.
+
+-- performs this removal on a Row of Choices.
 reduce_single :: Block Choices -> Block Choices
 reduce_single x = [xs `minus` singles | xs <- x ]
     where
         singles = concat (filter is_single x)
--- | remove any duplicate choice in any blocks(rows/cols/boxs) related
+-- remove any duplicate choice in any blocks(rows/cols/boxs) related
 prune_level_1 :: Matrix Choices -> Matrix Choices
 prune_level_1 = pruneBy boxs . pruneBy cols . pruneBy rows
     where
         pruneBy f = f . map reduce_single . f
--- | Solver - LEVEL 2 : Prune the naked pairs
--- | In a Matrix Choices, we find exactly two positions with the choices [2,3].
--- | Then obviously, the value 2 and 3 can only occur in those two places.
--- | All other occurrences of the value 1 and 9 can eliminated
--- | eliminate other occurrences if there exist dup pairs
+
+
+--  Solver - LEVEL 2 : Prune the naked pairs
+--  In a Matrix Choices, we find exactly two positions with the choices [2,3].
+--  Then obviously, the value 2 and 3 can only occur in those two places.
+--  All other occurrences of the value 1 and 9 can eliminated
+--  eliminate other occurrences if there exist dup pairs
 reduce_samepair :: Block Choices -> Block Choices
 reduce_samepair x = [if (isInfixOf dup_pair xs)&&(dup_pair/=xs) then xs\\dup_pair else xs | xs <- x]
     where
         dup_pair = to_samepair x
--- | similar to prune_level_1
+
+-- similar to prune_level_1
 prune_dup_pair :: Matrix Choices -> Matrix Choices
 prune_dup_pair = pruneBy boxs . pruneBy cols . pruneBy rows
     where
         pruneBy f = f . map reduce_samepair . f
--- | combine 2 pruning levels
+-- combine 2 pruning levels
 prune_level_2 :: Matrix Choices -> Matrix Choices
 prune_level_2 x = prune_dup_pair (prune_level_1 x)
--- | Solver - LEVEL 3 : Prune the naked triples
--- | Resembles Solver - LEVEL 2
--- | In a Matrix Choices, we find exactly 3 positions with the choices [2,3,9].
--- | All other simultaneous occurrences of the value [2,3,9] in sharing blocks can eliminated
+
+
+-- Solver - LEVEL 3 : Prune the naked triples
+-- Resembles Solver - LEVEL 2
+-- In a Matrix Choices, we find exactly 3 positions with the choices [2,3,9].
+-- All other simultaneous occurrences of the value [2,3,9] in sharing blocks can eliminated
 -- note: higher levels can also be constructed similarly but there is no sense to filter not frequent occasions
 -- | eliminate other simultaneous occurrences if there exist 3 same triples
 reduce_sametriple :: Block Choices -> Block Choices
@@ -400,8 +422,8 @@ prune_dup_triple = pruneBy boxs . pruneBy cols . pruneBy rows
 -- | combine 3 pruning levels
 prune_level_3 :: Matrix Choices -> Matrix Choices
 prune_level_3 x = prune_dup_triple (prune_dup_pair (prune_level_1 x))
--- | recursively applies the function f to x as long as x /= f(x)
--- | This term in math is a "fix point":
+-- recursively applies the function f to x as long as x /= f(x)
+-- This term in math is a "fix point":
 fixpoint :: Eq a => (a -> a) -> a -> a
 fixpoint f x = if x == x' then x else fixpoint f x'
     where
@@ -414,8 +436,10 @@ is_pairs :: [a] -> Bool
 is_pairs l = length l == 2
 is_triple :: [a] -> Bool
 is_triple l = length l == 3
+
 --prop> to_samepair [[2,3,4,5],[2,3,4],[2,3],[4,3,5,1],[5,3],[2,3],[2,5]]
 -- [2,3]
+
 to_samepair :: Eq a => [[a]] -> [a]
 to_samepair x = concat $ getDups pairs
     where
@@ -431,16 +455,16 @@ to_sametriple xs = concat $ nub $ filter (\x -> count x xs == 3) triples
 count :: Eq a => [a] -> [[a]] -> Int
 count y ys = length $ filter (==y) ys
 ----------------
--- | When solved, each position in the sudoku matrix has only one choice
+-- When solved, each position in the sudoku matrix has only one choice
 complete :: Matrix Choices -> Bool
 complete = all (all is_single)
--- | The Sudoku is unsolvable, if any position has no choice:
+-- The Sudoku is unsolvable, if any position has no choice:
 unsolvable :: Matrix Choices -> Bool
 unsolvable = any (any null)
--- | No duplicate in any the single choices in any block
+-- No duplicate in any the single choices in any block
 consistent :: Block Choices -> Bool
 consistent = nodup . concat . filter is_single
--- | Check whether there is no duplicate
+-- Check whether there is no duplicate
 nodup :: Eq a => [a] -> Bool
 nodup l = nub l == l
 -- | Satisfy sudoku constrains
