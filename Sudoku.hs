@@ -18,10 +18,11 @@ module Sudoku
   , (!!=)
   , update
   , solve
+  , solve_level_0
   ) where
 import Test.QuickCheck
 import Data.Maybe (fromJust, isNothing)
-import Data.List ((\\), transpose, nub, isInfixOf)
+import Data.List ((\\), transpose, nub, isInfixOf) --isInfixOf
 import Data.Char (isDigit, digitToInt, intToDigit)
 -- A matrix is a list of rows.
 type Matrix a = [Row a]
@@ -182,13 +183,16 @@ instance Arbitrary Sudoku where
     return (Sudoku rows)
 -- fromString converts an 81-character canonical string encoding for a
 -- Sudoku into our internal representation
+
 fromString :: String -> Sudoku
 fromString xs = Sudoku (group xs)
+
 -- group a string into a nested list consisting of 9 lists
 group :: String -> Matrix Cell
 group xs = chunk 9 (concat [convert s | s <- ys])
     where
         ys = lines xs
+
 chunk :: Int -> Row Cell -> Matrix Cell
 chunk _ [] = []
 chunk n l
@@ -206,6 +210,7 @@ convert str = case str of
 -- toString converts a Sudoku into its canonical 81-character string
 -- encoding
 -- prop> fromString (toString s) == s
+
 toString :: Sudoku -> String
 toString (Sudoku s) = concat $ [printRow (selectRow s x) | x <- [0..8]] -- traversal of all rows (x is the index)
     where
@@ -213,16 +218,20 @@ toString (Sudoku s) = concat $ [printRow (selectRow s x) | x <- [0..8]] -- trave
             []           -> ""
             (Nothing:xs) -> "." ++ printRow xs
             (Just a:xs)  -> [intToDigit a] ++ printRow xs
+
 -- the Int represents the row index in the matrix
 selectRow :: Matrix Cell -> Int -> Row Cell
 selectRow (x:_) 0  = x
 selectRow (x:xs) n = selectRow xs (n-1)
 type Block a = [a]
+
 -- | rows cols boxs are blocks which have to satisfy 2 constraints : No blanks & No duplicates when finished
 rows :: Matrix a -> [Block a]
 rows = id
+
 cols :: Matrix a -> [Block a]
 cols = transpose
+
 boxs :: Matrix a -> [Block a]
 boxs = unpack . (map cols) . pack
     where
@@ -265,10 +274,6 @@ okSudoku (Sudoku s) = all okBlock (boxs s) &&
 -- okSudoku constrains the duplicates
 -- noBlanks constrains the sudoku is finished without "Nothing" position
 
--- QuickCheck property to check whether the sudoku is valid
-prop_Sudoku :: Sudoku -> Bool
-prop_Sudoku (Sudoku s) = isSudoku (Sudoku s)
-
 type Pos = (Int, Int)
 
 -- Return a blank position in the Sudoku
@@ -280,13 +285,14 @@ blank :: Sudoku -> Pos
 blank = head . allBlankPos
 
 -- Finds all blank spaces in a sudoku
-indexedPuzzle :: Sudoku -> [(Int, [(Int, Maybe Int)])]
-indexedPuzzle = zip [0..8] . map (zip [0..8]) . cells
 allBlankPos :: Sudoku -> [Pos]
-allBlankPos = toPosList . getBlanks . indexedPuzzle
+allBlankPos = toPosList . getBlanks . indexed
     where getBlanksRow = map fst . filter (isNothing . snd)
           getBlanks    = map (fmap getBlanksRow)
           toPosList    = concatMap (\(r, xs) -> map (r,) xs)
+
+indexed :: Sudoku -> [(Int, [(Int, Maybe Int)])]
+indexed = zip [0..8] . map (zip [0..8]) . cells
 
 -- Given a list, and a tuple containing an index in the list and a new value,
 -- update the given list with the new value at the given index.
@@ -294,6 +300,7 @@ allBlankPos = toPosList . getBlanks . indexedPuzzle
 -- ["a","apa","c","d"]
 -- >>> ["p","qq","rrr"] !!= (0,"bepa")
 -- ["bepa","qq","rrr"]
+
 -- The replace operator
 (!!=) :: [a] -> (Int, a) -> [a]
 (!!=) l (i, x)
@@ -306,9 +313,6 @@ update :: Sudoku -> Pos -> Int -> Sudoku
 update (Sudoku s) (r, c) i = Sudoku (take r s ++ [(s!!r) !!= (c, toCell i)] ++ drop (r+1) s)
     where
         toCell x = Just x
--- (!!=): After replacing an element, the length should be the same
-prop_replace :: [a] -> (Int, a) -> Bool
-prop_replace s (i,x) = length s == length (s !!= (i, x))
 
 -- Solver - LEVEL 0 : Brute Force / Backtracking
 -- solve takes an 81-character encoding of a Sudoku puzzle and returns a
@@ -328,6 +332,43 @@ solve_level_0 str
 -- If you'd like to test this slow solution, simply change the "solve" to "solve_level_0" in Main.hs
 
 ---------- Above is based on Tony's skeleton.
+-- QuickCheck:
+prop_allBlank :: Bool
+prop_allBlank = let m = cells allBlanks
+                in
+                 length m == 9
+                 && and (map ((==9) . length) m)
+                 && and ((concatMap (map isNothing)) m)
+
+-- whether the sudoku is valid
+prop_Sudoku :: Sudoku -> Bool
+prop_Sudoku (Sudoku s) = isSudoku (Sudoku s)
+
+-- whether the found position is really a blank
+prop_blank :: Sudoku -> Bool
+prop_blank s = let m        = cells s
+                   (x,y)    = blank s
+               in isNothing ((m !! x) !! y)
+
+-- (!!=): After replacing an element, the length should be the same
+prop_replace :: [a] -> (Int, a) -> Bool
+prop_replace s (i,x) = length s == length (s !!= (i, x))
+
+-- checks the updated position
+prop_update :: Sudoku -> Pos -> Int -> Bool
+prop_update s p i = let (r,c) = p
+                        s' = update s p i
+                        m = cells s'
+                    in
+                     (m !! r) !! c == toMaybe i
+-- helper:
+toMaybe :: Int -> Maybe Int
+toMaybe 0 = Nothing
+toMaybe i = Just i
+
+fewerCheck prop = quickCheckWith (stdArgs{ maxSuccess = 30 })  prop
+
+
 
 -- Extensions begin here:
 -- 1. Optimize guessing order
@@ -380,9 +421,9 @@ toString' m = concat $ [printRow (selectRow m x) | x <- [0..8]] -- traversal of 
 
 -- converts Sudoku to choices matrix which is applied in pruning part (typical Top-down)
 fromSudoku :: Sudoku -> [Matrix Value]
-fromSudoku (Sudoku m) = search (prune_level_2 (choices m))
-                                -- change the number 1,2,3 to control different levels
-                                --'search' function should also be changed as the same time
+fromSudoku (Sudoku m) = search (prune_level_3 (choices m))
+                                         -- change the number 1,2,3 to control different levels
+                                         --'search' function should also be changed as the same time
 
 -- recursively applies the function f to x as long as x /= f(x)
 -- This term in math is a "fix point":
@@ -396,7 +437,7 @@ search :: Matrix Choices -> [Matrix Value]
 search m
     | unsolvable m || not (satisfy m) = []
     | complete m = collapse m
-    | otherwise = [s | m' <- expand m, s <- search (fixpoint prune_level_2 m')]
+    | otherwise = [s | m' <- expandFirst m, s <- search (fixpoint prune_level_3 m')]
                                          -- change the number 1,2,3 to control different levels
                                          -- 'fromSudoku' function should also be changed as the same time
                                          -- replace 'expandFirst' by 'expand to test the naive expand
@@ -451,6 +492,7 @@ reduce_single :: Block Choices -> Block Choices
 reduce_single x = [xs `minus` singles | xs <- x ]
     where
         singles = concat (filter is_single x)
+
 -- remove any duplicate choice in any blocks(rows/cols/boxs) related
 prune_level_1 :: Matrix Choices -> Matrix Choices
 prune_level_1 = pruneBy boxs . pruneBy cols . pruneBy rows
@@ -458,33 +500,40 @@ prune_level_1 = pruneBy boxs . pruneBy cols . pruneBy rows
         pruneBy f = f . map reduce_single . f
 
 --  Solver - LEVEL 2 : Prune the naked pairs
---  In a Matrix Choices, we find exactly two positions with the choices [2,3].
+--  In a Block Choices, we find exactly two positions with the choices [2,3].
 --  Then obviously, the value 2 and 3 can only occur in those two places.
 --  All other occurrences of the value 1 and 9 can eliminated
 --  eliminate other occurrences if there exist dup pairs
+
+-- prop> reduce_samepair [[Just 2,Just 3, Just 4, Just 5], [Just 2,Just 3,Just 4],[Just 2,Just 3],[Just 4,Just 3,Just 5,Just 1],[Just 2,Just 3],[Just 2,Just 5]]
+-- [[Just 4,Just 5],[Just 4],[Just 2,Just 3],[Just 4,Just 5,Just 1],[Just 2,Just 3],[Just 5]]
+-- dup_pair = [Just 2, Just 3]
 reduce_samepair :: Block Choices -> Block Choices
 reduce_samepair x = [if (isInfixOf dup_pair xs)&&(dup_pair/=xs) then xs\\dup_pair else xs | xs <- x]
-    where
+    where -- [if (isInfixOf dup_pair xs)&&(dup_pair/=xs) then xs\\dup_pair else xs | xs <- x]
+          -- [if (dup_pair == xs) then xs else xs\\dup_pair | xs <- x]
         dup_pair = to_samepair x
+
 -- similar to prune_level_1
 prune_dup_pair :: Matrix Choices -> Matrix Choices
 prune_dup_pair = pruneBy boxs . pruneBy cols . pruneBy rows
     where
         pruneBy f = f . map reduce_samepair . f
+
 -- combine 2 pruning levels
 prune_level_2 :: Matrix Choices -> Matrix Choices
-prune_level_2 x = prune_dup_pair (prune_level_1 x)
+prune_level_2 x = prune_dup_pair (prune_level_2 x)
 
 -- Solver - LEVEL 3 : Prune the naked triples
 -- Resembles Solver - LEVEL 2
--- In a Matrix Choices, we find exactly 3 positions with the choices [2,3,9].
+-- In a Block Choices, we find exactly 3 positions with the choices [2,3,9].
 -- All other simultaneous occurrences of the value [2,3,9] in sharing blocks can eliminated
 -- note: higher levels can also be constructed similarly but there is no sense to filter not frequent occasions
 
 -- eliminate other simultaneous occurrences if there exist 3 same triples
 reduce_sametriple :: Block Choices -> Block Choices
 reduce_sametriple x = [if (isInfixOf dup_triple xs)&&(dup_triple/=xs) then xs\\dup_triple else xs | xs <- x]
-    where
+    where -- [if (dup_triple/=xs) then xs\\dup_triple else xs | xs <- x] -- more efficient but exist bugs
         dup_triple = to_sametriple x -- [2,3,9]
 
 -- similar to prune_level_1 and prune_dup_pair
@@ -495,7 +544,7 @@ prune_dup_triple = pruneBy boxs . pruneBy cols . pruneBy rows
 
 -- combine 3 pruning levels
 prune_level_3 :: Matrix Choices -> Matrix Choices
-prune_level_3 x = prune_dup_triple (prune_dup_pair (prune_level_1 x))
+prune_level_3 x = prune_dup_triple (prune_dup_pair (prune_level_2 x))
 
 -- helper functions:
 is_single :: [a] -> Bool
@@ -522,6 +571,7 @@ to_sametriple :: Eq a => [[a]] -> [a]
 to_sametriple xs = concat $ nub $ filter (\x -> count x xs == 3) triples
     where
         triples = filter is_triple xs
+
 count :: Eq a => [a] -> [[a]] -> Int
 count y ys = length $ filter (==y) ys
 
@@ -542,6 +592,8 @@ nodup l = nub l == l
 -- Satisfy sudoku constrains:
 satisfy :: Matrix Choices -> Bool
 satisfy m = all consistent (rows m) && all consistent (cols m) && all consistent (boxs m)
+
+
 
 
 -- | reference:
