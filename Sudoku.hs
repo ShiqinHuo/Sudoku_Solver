@@ -522,7 +522,7 @@ prune_dup_pair = pruneBy boxs . pruneBy cols . pruneBy rows
 
 -- combine 2 pruning levels
 prune_level_2 :: Matrix Choices -> Matrix Choices
-prune_level_2 x = prune_dup_pair (prune_level_2 x)
+prune_level_2 x = prune_dup_pair (prune_level_1 x)
 
 -- Solver - LEVEL 3 : Prune the naked triples
 -- Resembles Solver - LEVEL 2
