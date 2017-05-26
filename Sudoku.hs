@@ -194,7 +194,7 @@ chunk _ [] = []
 chunk n l
     | n > 0 = (take n l) : (chunk n (drop n l))
     | otherwise = error "Negative n"
--- http://stackoverflow.com/questions/12876384/grouping-a-list-into-lists-of-n-elements-in-haskell
+
 -- converts a string into a row
 convert :: String -> Row Cell
 convert str = case str of
@@ -268,6 +268,7 @@ okSudoku (Sudoku s) = all okBlock (boxs s) &&
 -- QuickCheck property to check whether the sudoku is valid
 prop_Sudoku :: Sudoku -> Bool
 prop_Sudoku (Sudoku s) = isSudoku (Sudoku s)
+
 type Pos = (Int, Int)
 
 -- Return a blank position in the Sudoku
@@ -484,7 +485,7 @@ prune_level_2 x = prune_dup_pair (prune_level_1 x)
 reduce_sametriple :: Block Choices -> Block Choices
 reduce_sametriple x = [if (isInfixOf dup_triple xs)&&(dup_triple/=xs) then xs\\dup_triple else xs | xs <- x]
     where
-        dup_triple = to_sametriple x -- [2,3,6]
+        dup_triple = to_sametriple x -- [2,3,9]
 
 -- similar to prune_level_1 and prune_dup_pair
 prune_dup_triple :: Matrix Choices -> Matrix Choices
@@ -550,4 +551,6 @@ satisfy m = all consistent (rows m) && all consistent (cols m) && all consistent
 -- https://en.wikibooks.org/wiki/Haskell/Lists_and_tuples
 -- https://wiki.haskell.org/Sudoku
 -- http://mfukar.github.io/2015/12/11/haskell-xvi.html
---https://github.com/pkukulak/sudoku/blob/master/src/Sudoku.hs
+-- https://github.com/pkukulak/sudoku/blob/master/src/Sudoku.hs
+-- http://stackoverflow.com/questions/12876384/grouping-a-list-into-lists-of-n-elements-in-haskell
+
