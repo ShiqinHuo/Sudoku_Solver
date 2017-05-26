@@ -414,11 +414,13 @@ reduce_sametriple :: Block Choices -> Block Choices
 reduce_sametriple x = [if (isInfixOf dup_triple xs)&&(dup_triple/=xs) then xs\\dup_triple else xs | xs <- x]
     where
         dup_triple = to_sametriple x -- [2,3,6]
+
 -- | similar to prune_level_1 and prune_dup_pair
 prune_dup_triple :: Matrix Choices -> Matrix Choices
 prune_dup_triple = pruneBy boxs . pruneBy cols . pruneBy rows
     where
         pruneBy f = f . map reduce_sametriple . f
+
 -- | combine 3 pruning levels
 prune_level_3 :: Matrix Choices -> Matrix Choices
 prune_level_3 x = prune_dup_triple (prune_dup_pair (prune_level_1 x))
@@ -478,15 +480,16 @@ search m
                                          -- change the number 1,2,3 to control different levels
                                          -- 'fromSudoku' function should also be changed as the same time
                                          -- replace 'expandFirst' by 'expand to test the naive expand
--- | Expand WITHOUT considering the guessing order
+-- Expand WITHOUT considering the guessing order
 expand :: Matrix Choices -> [Matrix Choices]
 expand m =[rows1 ++ [row1 ++ [c] : row2] ++ rows2 | c <- cs]
     where
         (rows1, row : rows2) = break (any(not . is_single)) m
         (row1, cs : row2) = break (not . is_single) row
 -- if you want to test expanding without optimization, replace 'expandFirst' in 'search' by 'expand
--- | Optimizing the guessing order
--- | Performs the expansion beginning with the smallest number of choices (>1)
+
+-- Optimizing the guessing order
+-- Performs the expansion beginning with the smallest number of choices (>1)
 -- breaks up a matrix is broken into five pieces:
 -- mc = rows1 ++ [row1 ++ cs : row2] ++ rows2
 expandFirst :: Matrix Choices -> [Matrix Choices]
@@ -497,8 +500,9 @@ expandFirst mc  = [rows1 ++ [row1 ++ [c] : row2] ++ rows2 | c <- cs]
         best cs           = (length cs == n)
         n                 = minchoice mc
         minchoice         = minimum . filter(>1) . concat . map(map length)
--- | Solve function : main purpose is to convert between types: Sudoku, Matrix and String.
--- | related to the use of list comprehension & nested list
+
+-- Solve function : main purpose is to convert between types: Sudoku, Matrix and String.
+-- related to the use of list comprehension & nested list
 solve :: String -> [String]
 solve str = to_listOfStr list_Of_matrix
     where
@@ -506,12 +510,12 @@ solve str = to_listOfStr list_Of_matrix
         list_Of_matrix = fromSudoku sud
         to_listOfStr list_Of_matrix = [ toString' m | m <- list_Of_matrix ]
 -- helper functions (typical Top-down):
--- | converts Sudoku to choices matrix which is applied in pruning part
+-- converts Sudoku to choices matrix which is applied in pruning part
 fromSudoku :: Sudoku -> [Matrix Value]
 fromSudoku (Sudoku m) = search (prune_level_2 (choices m))
                                 -- change the number 1,2,3 to control different levels
                                 --'search' function should also be changed as the same time
--- | converts a matrix to string
+-- converts a matrix to string
 toString' :: Matrix Cell -> String
 toString' m = concat $ [printRow (selectRow m x) | x <- [0..8]] -- traversal of all rows (x is the index)
     where
