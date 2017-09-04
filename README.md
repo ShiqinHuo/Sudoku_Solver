@@ -17,7 +17,7 @@ Solving Algorithm 3: Constraint Propagation (Extension 2)
 
 Generating Algorithm: Las Vegas Algorithm (Extension 3)
 
-For a full explanation, read Report.pdf which explain the algorithms & implementation in details 
+For a full explanation, read Report.pdf which explains the algorithms & implementation in details 
 and give a personal analysis.
 
 
