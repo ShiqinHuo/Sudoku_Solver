@@ -4,6 +4,8 @@ ANU Course project @COMP1130
 Enjoying a worldwide popularity, Sudoku never fails to appeal to programmers.
 This repository implements some human-like algorithms to solve Sudoku in Haskell.
 
+## => read Report.pdf for more details
+
 Algorithm:
 
 Solving Algorithm 1: Depth-first Search (Brute Force/Backtracking) (Tony’s Skeleton Solution)
