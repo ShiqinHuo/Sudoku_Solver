@@ -4,7 +4,7 @@ ANU Course project @COMP1130
 Enjoying a worldwide popularity, Sudoku never fails to appeal to programmers.
 This repository implements some human-like algorithms to solve Sudoku in Haskell.
 
-## => read <https://github.com/ShiqinHuo/Sudoku_Solver_in_Haskell/blob/master/Report.pdf> for more details
+## => read [Report.pdf](https://github.com/ShiqinHuo/Sudoku_Solver_in_Haskell/blob/master/Report.pdf) for more details
 
 Algorithm:
 
