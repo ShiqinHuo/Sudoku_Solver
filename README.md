@@ -3,7 +3,7 @@ This repo implements some **human-like algorithms** to solve Sudoku in **Haskell
 
 For details, read **[Report.pdf](https://github.com/ShiqinHuo/Sudoku_Solver_in_Haskell/blob/master/Report.pdf)**
 #### **Algorithm Overview:**
-  * Solving Algorithm 1: **Depth-first Search (Brute Force/Backtracking) **
+  * Solving Algorithm 1: **Depth-first Search (Brute Force/Backtracking)**
   * Solving Algorithm 2: **Prioritize the Guessing Order** (Extension 1)
   * Solving Algorithm 3: **Constraint Propagation** (Extension 2) 
     * Hidden Singles (Solver level 1 in [sudoku.hs](https://github.com/ShiqinHuo/Sudoku_Solver_in_Haskell/blob/master/Sudoku.hs))   
