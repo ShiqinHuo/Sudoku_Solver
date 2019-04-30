@@ -1,6 +1,5 @@
-# Sudoku_Solver_in_Haskell 
-ANU Course project @COMP1130
-This repository implements some human-like algorithms to solve Sudoku in Haskell.
+# Sudoku_Solver_in_Haskell - Pure Functional Programming Application
+This repository implements some human-like algorithms to solve Sudoku in Haskell. 
 For a full explanation, read [Report.pdf](https://github.com/ShiqinHuo/Sudoku_Solver_in_Haskell/blob/master/Report.pdf) which explains the algorithms & implementation in details and give a personal analysis.
 ## Algorithm:
 ### Solving Algorithm 1: Depth-first Search (Brute Force/Backtracking) (Tony’s Skeleton Solution)
