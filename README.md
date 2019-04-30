@@ -1,8 +1,8 @@
-### Sudoku_Solver_in_Haskell - Pure Functional Programming Application
+## Sudoku_Solver_in_Haskell - Pure Functional Programming App
 This repo implements some **human-like algorithms** to solve Sudoku in **Haskell**. **纯函数式数独解题器**
 
 For details, read **[Report.pdf](https://github.com/ShiqinHuo/Sudoku_Solver_in_Haskell/blob/master/Report.pdf)**
-#### **Algorithm Overview:**
+### **Algorithm Overview:**
   * Solving Algorithm 1: **Depth-first Search (Brute Force/Backtracking)**
   * Solving Algorithm 2: **Prioritize the Guessing Order** (Extension 1)
   * Solving Algorithm 3: **Constraint Propagation** (Extension 2) 
@@ -10,7 +10,7 @@ For details, read **[Report.pdf](https://github.com/ShiqinHuo/Sudoku_Solver_in_H
     * Prune Naked Pairs (Solver level 2 in [sudoku.hs](https://github.com/ShiqinHuo/Sudoku_Solver_in_Haskell/blob/master/Sudoku.hs)) 
     * Prune Naked Triples (Solver level 3 in [sudoku.hs](https://github.com/ShiqinHuo/Sudoku_Solver_in_Haskell/blob/master/Sudoku.hs))
   * Generating Algorithm: Las Vegas Algorithm (Extension 3)
-#### **Reasoning:**
+### **Reasoning:**
 * **EXTENSION 1: Optimizing the guessing order**
   * We are required to find the block with fewest candidates to reduce redundancy
   * In my implementation, I use num of choice to represent the levels of difficulty to work out
@@ -33,5 +33,29 @@ For details, read **[Report.pdf](https://github.com/ShiqinHuo/Sudoku_Solver_in_H
     * Resembles Solver - LEVEL 2
     * In a Block Choices, we find exactly 3 positions with the choices [2,3,9]. All other simultaneous occurrences of the value [2,3,9] in sharing blocks can eliminated
     * note: higher levels can also be constructed similarly but there is no sense to filter not frequent occasions eliminate other simultaneous occurrences if there exist 3 same triples
+
+### **Test & Analysis**
+
+#### Test Result for [easy.txt](https://github.com/ShiqinHuo/Sudoku_Solver/blob/master/examples/easy.txt)
+|  | Level 0: Brute Force         |Level 1: Hidden Singles  |Level 2: Naked Pairs |Level 3: Naked Triples|
+| ------------- |:-------------:| -----:|-----:|-----:|
+| expand |real 5m45.574s |real 5m53.522s|  NULL |NULL|
+| expandFirst    | NULL |real 0m1.175s  |real 0m0.695s |real 0m0.789s|
+
+#### Test Result for [hard.txt](https://github.com/ShiqinHuo/Sudoku_Solver/blob/master/examples/hard.txt)
+|  | Level 0: Brute Force         |Level 1: Hidden Singles  |Level 2: Naked Pairs |Level 3: Naked Triples|
+| ------------- |:-------------:| -----:|-----:|-----:|
+| expand |Killed |24min27s|  NULL |NULL|
+| expandFirst    | NULL |real 4m13.680s |real 3m58.542s |real 5m13.327s|
+
+> Since “Naked triple” is not very general so Solver-level 3 performs a lot of invalid checks that leads to the relatively slower than Solver_level 2.
+But we can obviously find the dramatic decline in time if we replace the naïve expand by expandFirst. The guessing order      makes a huge difference indeed!
+> 
+
+#### Very Fast Solver for [sudoku17.txt](https://github.com/ShiqinHuo/Sudoku_Solver/blob/master/examples/sudoku17.txt)
+To deal with this huge file, I found a very fast solver online (https://wiki.haskell.org/Sudoku#Very_fast_Solver) and I tested it for the **Sudoku17.txt**, **only taking 43.898s** to print all the output, **approximately 50000 Sudoku!**). 
+
+Data.vector is imported in this solution and this library has a wide range of built-in functions and the complexity of the majority is merely O(1)! Indexing, update, imap, ifilter are all built-in. It is so awesome that this Data.vector library seems to be born to solve Sudoku. Besides, the solution provided applies the Monad in an extremely skilled manner, which also enables to boost the solver.
+
 
 4 Sep 2017
