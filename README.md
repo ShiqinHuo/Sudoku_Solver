@@ -31,7 +31,7 @@ But we can obviously find the dramatic decline in time if we replace the naïve
 #### Very Fast Solver for [sudoku17.txt](https://github.com/ShiqinHuo/Sudoku_Solver/blob/master/examples/sudoku17.txt)
 To deal with this huge file, I found a [very fast solver online](https://wiki.haskell.org/Sudoku#Very_fast_Solver) and I tested it for the **Sudoku17.txt**, **only taking 43.898s** to print all the output, **approximately 50000 Sudoku!**). 
 
-Data.vector is imported in this solution and this library has a wide range of built-in functions and the complexity of the majority is merely O(1)! Indexing, update, imap, ifilter are all built-in. It is so awesome that this Data.vector library seems to be born to solve Sudoku. Besides, the solution provided applies the Monad in an extremely skilled manner, which also enables to boost the solver.
+> Data.vector is imported in this solution and this library has a wide range of built-in functions and the complexity of the majority is merely O(1)! Indexing, update, imap, ifilter are all built-in. It is so awesome that this Data.vector library seems to be born to solve Sudoku. Besides, the solution provided applies the Monad in an extremely skilled manner, which also enables to boost the solver.
 
 ### **Reasoning:**
 * **EXTENSION 1: Optimizing the guessing order**
